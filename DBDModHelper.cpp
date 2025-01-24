@@ -11,10 +11,9 @@
 #include <random>
 #include <winhttp.h>
 
-
 #pragma comment(lib, "winhttp.lib")
 
-const std::string LOCAL_VERSION = "1.1.0";
+const std::string LOCAL_VERSION = "1.1.2";
 const std::wstring GITHUB_HOST = L"raw.githubusercontent.com";
 const std::wstring VERSION_PATH = L"/nikoriki/DBDModHelper/main/version.txt?nocache=" + std::to_wstring(std::time(nullptr));
 
@@ -34,17 +33,17 @@ void displayCat() {
        _                        
       \`*-.                    
        )  _`-.                  
-      .  : `. .                
+      .  : `. .                 
       : _   '  \                
-      ; *` _.   `*-._          
-      `-.-'          `-.       
-        ;       `       `.     
-        :.       .        \    
-        . \  .   :   .-'   .   
-        '  `+.;  ;  '      :   
-        :  '  |    ;       ;-. 
-        ; '   : :`-:     _.`* ;
-     .*' /  .*' ; .*`- +'  `*' 
+      ; *` _.   `*-._           
+      `-.-'          `-.        
+        ;       `       `.      
+        :.       .        \     
+        . \  .   :   .-'   .    
+        '  `+.;  ;  '      :    
+        :  '  |    ;       ;-.  
+        ; '   : :`-:     _.`* ; 
+     .*' /  .*' ; .*`- +'  `*'  
        `*-*   `*-*  `*-*'       
     )" << "\n\n";
 }
@@ -154,7 +153,6 @@ std::string fetchRemoteVersion() {
     return response;
 }
 
-
 void checkForUpdates() {
     std::cout << "Checking for updates..." << std::endl;
     std::string remoteVersion = fetchRemoteVersion();
@@ -197,9 +195,14 @@ void loadIntroSetting() {
             std::getline(file, line);
             introEnabled = (line == "1");
             file.close();
+        } else {
+            introEnabled = true;
         }
+    } else {
+        introEnabled = true;
     }
 }
+
 
 void saveIntroSetting() {
     char* appDataPath;
@@ -216,6 +219,7 @@ void saveIntroSetting() {
         }
     }
 }
+
 
 void typeText(const std::string& text, int delayMs = 50) {
     for (char c : text) {
@@ -362,13 +366,13 @@ void settingsMenu(std::string& modsFolder, std::string& dbdFolder) {
                 changeDirectories(modsFolder, dbdFolder);
                 break;
             case 3:
-                introEnabled = !introEnabled;
-                saveIntroSetting();
-                clearScreen();
-                displayCat();
+                 introEnabled = !introEnabled;
+                 saveIntroSetting();
+                 clearScreen();
+                 displayCat();
                 std::cout << "Menu intro turned " << (introEnabled ? "ON" : "OFF") << ".\n";
                 system("pause");
-                break;
+                 break;
             case 4:
                 return;
             default:
@@ -415,7 +419,19 @@ void renameMods(const std::string& folderPath, const std::string& platform) {
 void installMods(const std::string& modsFolder, const std::string& dbdFolder) {
     try {
         for (const auto& file : std::filesystem::directory_iterator(modsFolder)) {
-            std::filesystem::copy(file.path(), dbdFolder, std::filesystem::copy_options::overwrite_existing);
+            std::string sourcePath = file.path().string();
+            std::string destinationPath = dbdFolder + "\\" + file.path().filename().string();
+
+            std::cout << "Processing: " << sourcePath << " -> " << destinationPath << std::endl;
+
+            if (std::filesystem::exists(destinationPath)) {
+                std::cout << "File exists, removing: " << destinationPath << std::endl;
+                std::filesystem::remove(destinationPath);
+            }
+
+            std::filesystem::copy(file.path(), destinationPath);
+
+            std::cout << "Copied successfully: " << destinationPath << std::endl;
         }
     } catch (const std::exception& e) {
         clearScreen();
@@ -430,6 +446,8 @@ void installMods(const std::string& modsFolder, const std::string& dbdFolder) {
     std::cout << "Mods installed successfully.\n";
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }
+
+
 
 void removeMods(const std::string& dbdFolder) {
     std::cout << "Are you sure? In case you want to remove ALL the mods from DeadbyDaylight's pak folder, please type Y or N\n";
@@ -547,12 +565,14 @@ int main() {
     clearScreen();
     displayCat();
 
+    loadIntroSetting();
+
     checkForUpdates();
 
-    std::cout << "\nWelcome to DBD Mod Helper. Press any key to continue...";
-    std::cin.get();
-
     if (introEnabled) {
+        std::cout << "\nWelcome to DBD Mod Helper. Press any key to continue...";
+        std::cin.get();
+
         clearScreen();
         displayCat();
         typeText("This program is completely free and open source.\nMake sure to download it from my GitHub and not a sketchy Discord server.\n\n", 50);
@@ -589,5 +609,8 @@ int main() {
         }
     }
 
+
     menu(modsFolder, dbdFolder);
+
+    return 0; 
 }
